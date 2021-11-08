@@ -15,15 +15,22 @@ def users(request):
     user_list = [obj.json() for obj in list(User.objects.all())]
     return JsonResponse({"result": user_list})
 
+def cards(request):
+    user_list = [obj.json() for obj in list(Card.objects.all())]
+    return JsonResponse({"result": user_list})
+
 def projects(request):
-    count_on_page = int(request.GET.get('count'))
-    page_number = int(request.GET.get('number'))
+    count_on_page = int(request.GET.get('count',default = 100))
+    page_number = int(request.GET.get('number',default = 1))
     if request.GET.get('creator'):
         filt = request.GET.get('creator')
         filtered_project = [obj.json() for obj in list(Project.objects.filter(creator=filt).all())]
     elif request.GET.get('name'):
         filt = request.GET.get('name')
         filtered_project = [obj.json() for obj in list(Project.objects.filter(name=filt).all())]
+    elif request.GET.get('category'):
+        filt = request.GET.get('category')
+        filtered_project = [obj.json() for obj in list(Project.objects.filter(category=filt).all())]
     elif request.GET.get('tags'):
         filtered_project = []
         list_project = [obj.json() for obj in list(Project.objects.all())]
@@ -35,6 +42,8 @@ def projects(request):
                         if tag['name'] in filt:
                             if obj not in filtered_project:
                                 filtered_project.append(obj)
+    else:
+        filtered_project = [obj.json() for obj in list(Project.objects.all())]
     filtered_project = filtered_project[(page_number - 1) * count_on_page:page_number * count_on_page]
     return JsonResponse({"result": filtered_project})
 
@@ -56,6 +65,16 @@ def comments(request):
     comments_list = comments_list[(page_number-1)*count_on_page:page_number*count_on_page]
     comments_list = sorted(comments_list, key=sorted_by_date, reverse=True)
     return JsonResponse({"result": comments_list})
+
+def activities(request):
+    def sorted_by_date(comment):
+        return comment['date'];
+    count_on_page = int(request.GET.get('count',default="100"))
+    page_number = int(request.GET.get('number',default="1"))
+    activities_list = [obj.json() for obj in list(Activity.objects.all())]
+    activities_list = activities_list[(page_number-1)*count_on_page:page_number*count_on_page]
+    activities_list = sorted(activities_list, key=sorted_by_date, reverse=True)
+    return JsonResponse({"result": activities_list})
 
 def events(request):
     comments_list = [obj.json() for obj in list(Event.objects.all())]
@@ -168,9 +187,11 @@ def write_project(request):
         description = request['description']
         creator = request['creator']
         tags = request['tags']
+        category = request['category']
         r = Project(name=str(name),
-                 description=str(description),
-                 image='',
+                    description=str(description),
+                    image='',
+                    category = str(category)
                  )
         r.save()
         r.creator.add(User.objects.filter(id=creator).first())
@@ -256,10 +277,13 @@ def get_project_status(request,id):
 
 def get_user_status(request,id):
     user_id = id
+    count_on_page = int(request.GET.get('count', default=100))
+    page_number = int(request.GET.get('number', default=1))
     user = User.objects.filter(id=user_id).first()
-    status = {"statuses": [obj.json() for obj in list(Status.objects.filter(user=user).all())]}
+    status = [obj.json() for obj in list(Status.objects.filter(user=user).all())]
+    filtered_project = status[(page_number - 1) * count_on_page:page_number * count_on_page]
     if status:
-        return JsonResponse(status)
+        return JsonResponse({"statuses": filtered_project})
     else:
         return HttpResponse(status=404)
 
@@ -403,3 +427,147 @@ def delete_event(request,user,project):
     project = Project.objects.filter(id=project).first()
     Event.objects.filter(user=user,project=project).delete()
     return HttpResponse(status=200)
+
+
+@csrf_exempt
+def writecolumn(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        order = request['order']
+        name = request['name']
+        project_id = request['project_id']
+        project = Project.objects.filter(id=project_id).first()
+        column = Column(name=name,
+                 order=order,
+                 project=project
+                 )
+        column.save()
+        return JsonResponse({"Response": column.json()})
+    else:
+        return HttpResponse(status=405)
+
+
+@csrf_exempt
+def writecard(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        project_id = request['project_id']
+        project = Project.objects.filter(id=project_id).first()
+        name = request['name']
+        description = request['description']
+        column_order = request['column_order']
+        order = request['order']
+        column = Column.objects.filter(project=project, order=column_order).first()
+        card = Card(name=name,
+                 description=description,
+                 column=column,
+                 order = order,
+                 )
+        card.save()
+        return JsonResponse({"Response": card.json()})
+    else:
+        return HttpResponse(status=405)
+
+
+@csrf_exempt
+def getboard(request,id):
+        final_columns = []
+        project_id = id
+        project = Project.objects.filter(id=project_id).first()
+        columns = [obj.json() for obj in list(Column.objects.filter(project=project).all())]
+        for col in columns:
+            columna = Column.objects.filter(project=col['project']['id'], name=col['name']).first()
+            col = col.update({
+                'cards': [obj.json() for obj in list(Card.objects.filter(column=columna).all())]
+            })
+        if columns:
+            return JsonResponse({"columns": columns})
+        else:
+            return HttpResponse(status=404)
+
+@csrf_exempt
+def switch(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        column_prev = request['column_order']
+        card_prev = request['card_order']
+        column_next = request['column_next']
+        card_next = request['card_next']
+        project_id = request['project_id']
+        project = Project.objects.filter(id=project_id).first()
+        column_start = Column.objects.filter(project=project, order= column_prev).first()
+        card_start = Card.objects.filter(column=column_start, order= card_prev).first()
+        card_start.order = card_next
+        column_finish = Column.objects.filter(project=project, order= column_next).first()
+        card_start.column = column_finish
+        card_start.save()
+        for some_card in Card.objects.filter(column=column_start).all():
+            if some_card.order > card_prev:
+                some_card.order -= 1
+                some_card.save()
+        for some_card in Card.objects.filter(column=column_finish).all():
+            if some_card.order >= card_next:
+                some_card.order += 1
+                some_card.save()
+        return JsonResponse({"Response": True})
+    else:
+        return HttpResponse(status=405)
+
+
+@csrf_exempt
+def write_active(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        name = request['name']
+        description = request['description']
+        project = request['project']
+        user = request['user']
+        date = time.time()
+        r = Activity(name=str(name),
+                    description = str(description),
+                    project=Project.objects.filter(id=project).first(),
+                    user=User.objects.filter(id=user).first(),
+                    date = date
+                    )
+        r.save()
+        return JsonResponse(r.json())
+    else:
+        return HttpResponse(status=405)
+
+
+
+
+@csrf_exempt
+def get_project_active(request,id):
+    project_id = id
+    project = Project.objects.filter(id=project_id).first()
+    active = {"activities": [obj.json() for obj in list(Activity.objects.filter(project=project).all())]}
+    if active:
+        return JsonResponse(active)
+    else:
+        return HttpResponse(status=404)
+
+@csrf_exempt
+def get_user_active(request,id):
+    user_id = id
+    user = User.objects.filter(id=user_id).first()
+    active = {"activities": [obj.json() for obj in list(Activity.objects.filter(user=user).all())]}
+    if active:
+        return JsonResponse(active)
+    else:
+        return HttpResponse(status=404)
+
+@csrf_exempt
+def update_active_file(request,id):
+    project_id = id
+    if request.FILES:
+        the_file = request.FILES['image']
+        upload_to = 'files/'
+        timing = "act" + str(int(time.time()))
+        path = default_storage.save(os.path.join(upload_to, timing + the_file.name), the_file)
+        link = default_storage.url(timing+ the_file.name).replace('/posts/media/',"")
+        dictionary = {'file_name':link}
+        Project.objects.filter(id=project_id).update(**dictionary)
+        return JsonResponse(dictionary)
+    else:
+        return HttpResponse(status=404)

@@ -9,6 +9,8 @@ urlpatterns = [
     path('tags/', views.tags),
     path('comments/', views.comments),
     path('events/', views.events),
+    path('activities/', views.activities),
+    path('cards/', views.cards),
 
     path('write_user/', views.write_user),
     path('get_user/<int:id>/', views.get_user),
@@ -46,6 +48,15 @@ urlpatterns = [
     path('update_event/', views.update_event),
     path('delete_event/<int:user>/<int:project>/', views.delete_event),
 
+    path('write_active/', views.write_active),
+    path('get_project_active/<int:id>/', views.get_project_active),
+    path('get_user_active/<int:id>/', views.get_user_active),
+    path('update_active_file/<int:id>/', views.update_active_file),
+
+    path('board/writecolumn/', views.writecolumn),
+    path('board/writecard/', views.writecard),
+    path('board/getboard/<int:id>/', views.getboard),
+    path('board/switch/', views.switch)
 ]
 
 '''urlpatterns = [

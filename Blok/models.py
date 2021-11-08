@@ -1,5 +1,5 @@
 from django.db import models
-import json
+import json, time
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
@@ -70,12 +70,14 @@ class Project(models.Model):
     image = models.TextField()
     creator = models.ManyToManyField(User)
     tags = models.ManyToManyField(Tag)
-    def create(self, id, name, description, image, creator):
+    category = models.TextField(default="")
+    def create(self, id, name, description, image, creator, category):
         self.id = id
         self.name = name
         self.description = description
         self.image = image
         self.creator = creator
+        self.category = category
         self.save()
 
     def json(self):
@@ -85,6 +87,7 @@ class Project(models.Model):
                     "image": self.image,
                     "creator": [obj.json() for obj in list(self.creator.all())],
                     "tags": [obj.json() for obj in list(self.tags.all())],
+                    "category": self.category
                     }
 #name, description, image, creator
 
@@ -152,3 +155,71 @@ class Event(models.Model):
             "project": self.project.json(),
             "user": self.user.json(),
         }
+
+class Column(models.Model):
+    order = models.IntegerField()
+    project = models.ForeignKey(Project, on_delete = models.CASCADE)
+    name = models.TextField()
+
+
+    def create(self, name, project, order):
+        self.name = name
+        self.project = project
+        self.order = order
+        self.save()
+
+    def json(self):
+        return {
+            "name": self.name,
+            "order": self.order,
+            "project": self.project.json()
+        }
+
+
+class Card(models.Model):
+    column = models.ForeignKey(Column,  on_delete = models.CASCADE)
+    name = models.TextField()
+    description = models.TextField()
+    order = models.IntegerField()
+
+
+    def create(self, column, name, description, order):
+        self.column = column
+        self.name = name
+        self.description = description
+        self.order = order
+        self.save()
+
+    def json(self):
+        return {
+            "column": self.column.json(),
+            "name": self.name,
+            "description": self.description,
+            "order": self.order,
+        }
+
+class Activity(models.Model):
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
+    project = models.ForeignKey(Project, on_delete = models.CASCADE)
+    name = models.TextField()
+    description = models.TextField()
+    file = models.TextField()
+    date = models.IntegerField(default = 0)
+
+    def create(self, user, project, name, description, file, date):
+        self.user = user
+        self.project = project
+        self.name = name
+        self.description = description
+        self.file = file
+        self.date = date
+        self.save()
+
+    def json(self):
+        return {"user": self.user.json(),
+                "project": self.project.json(),
+                "name": self.name,
+                "description": self.description,
+                "file": self.file,
+                "date": self.date
+                }
