@@ -48,14 +48,28 @@ class User(models.Model):
                     }
 
 
+class Tag(models.Model):
+    id = models.AutoField(primary_key = True)
+    name = models.TextField()
+
+    def create(self, id, name, project):
+        self.name = name
+        self.save()
+
+    def json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            }
+
+
 class Project(models.Model):
     id = models.AutoField(primary_key = True)
     name = models.TextField(default=None)
     description = models.TextField()
     image = models.TextField()
     creator = models.ManyToManyField(User)
-    #tags = models.TextField()
-
+    tags = models.ManyToManyField(Tag)
     def create(self, id, name, description, image, creator):
         self.id = id
         self.name = name
@@ -69,14 +83,15 @@ class Project(models.Model):
                     "name": self.name,
                     "description": self.description,
                     "image": self.image,
-                    "creator": [obj.json() for obj in list(self.creator.all())]
+                    "creator": [obj.json() for obj in list(self.creator.all())],
+                    "tags": [obj.json() for obj in list(self.tags.all())],
                     }
 #name, description, image, creator
 
 
 class Status(models.Model):
-    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
-    project = models.OneToOneField(Project, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
+    project = models.ForeignKey(Project, on_delete = models.CASCADE)
     name = models.TextField()
 
     def create(self, user, project, name):
@@ -86,7 +101,54 @@ class Status(models.Model):
         self.save()
 
     def json(self):
-        return {"user": self.user,
-                    "project": self.project,
+        return {"user": self.user.json(),
+                    "project": self.project.json(),
                     "name": self.name,
                     }
+
+
+
+
+class Comment(models.Model):
+    description = models.TextField()
+    project = models.ForeignKey(Project, on_delete = models.CASCADE)
+    date = models.IntegerField()
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
+
+
+    def create(self, description, project, date, user):
+        self.description = description
+        self.project = project
+        self.date = date
+        self.user = user
+        self.save()
+
+    def json(self):
+        return {
+            "description": self.description,
+            "date": self.date,
+            "project": self.project.json(),
+            "user": self.user.json(),
+        }
+
+class Event(models.Model):
+    name = models.TextField()
+    project = models.ForeignKey(Project, on_delete = models.CASCADE)
+    date = models.IntegerField()
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
+
+
+    def create(self, name, project, date, user):
+        self.name = name
+        self.project = project
+        self.date = date
+        self.user = user
+        self.save()
+
+    def json(self):
+        return {
+            "name": self.name,
+            "date": self.date,
+            "project": self.project.json(),
+            "user": self.user.json(),
+        }
