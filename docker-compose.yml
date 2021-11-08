@@ -19,13 +19,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=cyber_garden_django
-      - POSTGRES_PASSWORD=cyber_garden_django
-      - POSTGRES_DB=cyber_garden_django
+      - POSTGRES_USER=work_with_me_backend
+      - POSTGRES_PASSWORD=work_with_me_backend
+      - POSTGRES_DB=work_with_me_backend
     networks:
       - app_network
   nginx:
-    container_name: cyber_garden_backend
+    container_name: work_with_me_backend
     build: .nginx
     depends_on:
       - web
