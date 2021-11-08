@@ -29,7 +29,7 @@ services:
 
   nginx:
     restart: unless-stopped
-    container_name: cyber_garden_backend
+    container_name: work_with_me_backend
     build: .nginx
     volumes:
       - static:/app/static
