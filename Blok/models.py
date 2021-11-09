@@ -199,27 +199,86 @@ class Card(models.Model):
         }
 
 class Activity(models.Model):
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     project = models.ForeignKey(Project, on_delete = models.CASCADE)
     name = models.TextField()
     description = models.TextField()
     file = models.TextField()
     date = models.IntegerField(default = 0)
+    type = models.TextField(default = "")
 
-    def create(self, user, project, name, description, file, date):
+    def create(self, user, project, name, description, file, date, id, type):
+        self.id = id
         self.user = user
         self.project = project
         self.name = name
         self.description = description
         self.file = file
         self.date = date
+        self.type = type
         self.save()
 
     def json(self):
-        return {"user": self.user.json(),
+        return {"id": self.id,
+                "user": self.user.json(),
                 "project": self.project.json(),
                 "name": self.name,
                 "description": self.description,
                 "file": self.file,
-                "date": self.date
+                "date": self.date,
+                "type": self.type
                 }
+
+class ActivityComment(models.Model):
+    id = models.AutoField(primary_key=True)
+    description = models.TextField()
+    activity = models.TextField()
+    date = models.IntegerField()
+    user = models.TextField()
+
+
+    def create(self, id, description, activity, date, user):
+        self.id = id
+        self.description = description
+        self.activity = activity
+        self.date = date
+        self.user = user
+        self.save()
+
+    def json(self):
+        return {
+            "id": self.id,
+            "description": self.description,
+            "date": self.date,
+            "activity": self.activity,
+            "user": User.objects.filter(id=self.user).first().json(),
+        }
+
+class Stage(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.TextField()
+    description = models.TextField()
+    project = models.TextField()
+    date = models.IntegerField()
+    period = models.TextField()
+
+
+    def create(self, id, name, description, project, date, period):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.project = project
+        self.date = date
+        self.period = period
+        self.save()
+
+    def json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "date": self.date,
+            "project": self.project,
+            "period": self.period,
+        }

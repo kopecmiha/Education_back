@@ -523,11 +523,13 @@ def write_active(request):
         project = request['project']
         user = request['user']
         date = time.time()
+        type = request['type']
         r = Activity(name=str(name),
                     description = str(description),
                     project=Project.objects.filter(id=project).first(),
                     user=User.objects.filter(id=user).first(),
-                    date = date
+                    date = date,
+                    type = type
                     )
         r.save()
         return JsonResponse(r.json())
@@ -539,35 +541,115 @@ def write_active(request):
 
 @csrf_exempt
 def get_project_active(request,id):
+    def sorted_by_date(active):
+        return active['date']
     project_id = id
     project = Project.objects.filter(id=project_id).first()
-    active = {"activities": [obj.json() for obj in list(Activity.objects.filter(project=project).all())]}
+    active = [obj.json() for obj in list(Activity.objects.filter(project=project).all())]
+    activities_list = sorted(active, key=sorted_by_date, reverse = True)
     if active:
-        return JsonResponse(active)
+        return JsonResponse({'activities': activities_list})
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({'activities': []})
 
 @csrf_exempt
 def get_user_active(request,id):
+    def sorted_by_date(active):
+        return active['date']
     user_id = id
     user = User.objects.filter(id=user_id).first()
-    active = {"activities": [obj.json() for obj in list(Activity.objects.filter(user=user).all())]}
+    active = [obj.json() for obj in list(Activity.objects.filter(user=user).all())]
+    activities_list = sorted(active, key=sorted_by_date, reverse = True)
     if active:
-        return JsonResponse(active)
+        return JsonResponse({'activities': activities_list})
     else:
         return HttpResponse(status=404)
 
 @csrf_exempt
 def update_active_file(request,id):
-    project_id = id
+    activity_id = id
     if request.FILES:
         the_file = request.FILES['image']
         upload_to = 'files/'
         timing = "act" + str(int(time.time()))
         path = default_storage.save(os.path.join(upload_to, timing + the_file.name), the_file)
         link = default_storage.url(timing+ the_file.name).replace('/posts/media/',"")
-        dictionary = {'file_name':link}
-        Project.objects.filter(id=project_id).update(**dictionary)
+        dictionary = {'file':link}
+        Activity.objects.filter(id=activity_id).update(**dictionary)
         return JsonResponse(dictionary)
     else:
         return HttpResponse(status=404)
+
+
+@csrf_exempt
+def write_active_comment(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        description = request['description']
+        activity = request['activity']
+        user = request['user']
+        date = time.time()
+        r = ActivityComment(description=str(description),
+                    activity=activity,
+                    user=user,
+                    date = date
+                    )
+        r.save()
+        return JsonResponse(r.json())
+    else:
+        return HttpResponse(status=405)
+
+
+@csrf_exempt
+def get_active_comment(request,id):
+    activity_id = id
+    comment = {"activity_comments": [obj.json() for obj in list(ActivityComment.objects.filter(activity=activity_id).all())]}
+    if comment:
+        return JsonResponse(comment)
+    else:
+        return HttpResponse(status=404)
+
+@csrf_exempt
+def update_active_comment(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        id = request['id']
+        act = ActivityComment.objects.filter(id=id).update(**request)
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=400)
+
+@csrf_exempt
+def delete_active_comment(request,id):
+    ActivityComment.objects.filter(id=id).delete()
+    return HttpResponse(status=200)
+
+@csrf_exempt
+def write_stage(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        name = request['name']
+        description = request['description']
+        project = request['project']
+        period = request['period']
+        date = time.time()
+        r = Stage(
+            name = str(name),
+            description=str(description),
+            project=str(project),
+            period=str(period),
+            date = date
+            )
+        r.save()
+        return JsonResponse(r.json())
+    else:
+        return HttpResponse(status=405)
+
+@csrf_exempt
+def get_project_stage(request,id):
+    project_id = id
+    stage = {"stage": [obj.json() for obj in list(Stage.objects.filter(project=project_id).all())]}
+    if stage:
+        return JsonResponse(stage)
+    else:
+        return JsonResponse({'stage': []})
