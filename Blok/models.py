@@ -135,7 +135,7 @@ class Column(models.Model):
         return {
             "name": self.name,
             "order": self.order,
-            "project": self.project.id
+            "project": self.project.json(),
         }
 
 
@@ -149,7 +149,7 @@ class Card(models.Model):
 
     def json(self):
         return {
-            "column": self.column.id,
+            "column": self.column.json(),
             "name": self.name,
             "description": self.description,
             "order": self.order,
