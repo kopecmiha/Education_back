@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('hello/', views.hello),
     path('users/', views.users),
     path('projects/', views.projects),
     path('status/', views.status),
@@ -42,13 +41,13 @@ urlpatterns = [
     path('write_comment/', views.write_comment),
     path('get_project_comment/<int:id>/', views.get_project_comment),
     path('update_comment/', views.update_comment),
-    path('delete_comment/<int:user>/<int:project>/', views.delete_comment),
+    path('delete_comment/<int:id>/', views.delete_comment_by_id),
 
     path('write_event/', views.write_event),
     path('get_project_event/<int:id>/', views.get_project_event),
     path('get_user_event/<int:id>/', views.get_user_event),
     path('update_event/', views.update_event),
-    path('delete_event/<int:user>/<int:project>/', views.delete_event),
+    path('delete_event/<int:id>/', views.delete_event_by_id),
 
     path('write_active/', views.write_active),
     path('get_project_active/<int:id>/', views.get_project_active),
@@ -63,6 +62,7 @@ urlpatterns = [
     path('board/writecard/', views.writecard),
     path('board/getboard/<int:id>/', views.getboard),
     path('board/switch/', views.switch),
+    path('board/switch_column/', views.switch_column),
 
     path('write_active_comment/', views.write_active_comment),
     path('get_active_comment/<int:id>/', views.get_active_comment),

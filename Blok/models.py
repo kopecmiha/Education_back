@@ -13,36 +13,7 @@ class User(models.Model):
     organization = models.TextField(default="")
     position = models.TextField(default="")
     contacts = models.TextField(default="")
-    avatar_image = models.TextField()
-
-    def create(self, id, name, last_name, patronimyc, type, email, password, organization, position, contacts,
-               avatar_image):
-        self.id = id
-        self.name = name
-        self.last_name = last_name
-        self.patronimyc = patronimyc
-        self.type = type
-        self.email = email
-        self.password = password
-        self.organization = organization
-        self.position = position
-        self.contacts = contacts
-        self.avatar_image = avatar_image
-        self.save()
-
-    def __str__(self):
-        return str({"id": self.id,
-                    "name": self.name,
-                    "last_name": self.last_name,
-                    "patronimyc": self.patronimyc,
-                    "type": self.type,
-                    "email": self.email,
-                    "password": self.password,
-                    "organization": self.organization,
-                    "position": self.position,
-                    "contacts": self.contacts,
-                    "avatar_image": self.avatar_image
-                    })
+    avatar_image = models.FileField(upload_to="avatars", null=True)
 
     def json(self):
         return {"id": self.id,
@@ -55,7 +26,7 @@ class User(models.Model):
                 "organization": self.organization,
                 "position": self.position,
                 "contacts": self.contacts,
-                "avatar_image": self.avatar_image
+                "avatar_image": self.avatar_image.name
                 }
 
 
@@ -93,46 +64,28 @@ class Project(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.TextField(default=None)
     description = models.TextField()
-    image = models.TextField()
-    creator = models.ManyToManyField(User)
+    image = models.FileField(upload_to="project_images", null=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=None, null=True)
     tags = models.ManyToManyField(Tag)
     recruts = models.ManyToManyField(Recrut)
     category = models.TextField(default="")
-
-    def create(self, id, name, description, image, creator, category):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.image = image
-        self.creator = creator
-        self.category = category
-        self.save()
 
     def json(self):
         return {"id": self.id,
                 "name": self.name,
                 "description": self.description,
-                "image": self.image,
-                "creator": [obj.json() for obj in list(self.creator.all())],
+                "image": self.image.name,
+                "creator": self.creator.json(),
                 "tags": [obj.json() for obj in list(self.tags.all())],
                 "recruts": [obj.json() for obj in list(self.recruts.all())],
                 "category": self.category
                 }
 
 
-# name, description, image, creator
-
-
 class Status(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     name = models.TextField()
-
-    def create(self, user, project, name):
-        self.user = user
-        self.project = project
-        self.name = name
-        self.save()
 
     def json(self):
         return {"user": self.user.json(),
@@ -147,19 +100,13 @@ class Comment(models.Model):
     date = models.IntegerField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    def create(self, description, project, date, user):
-        self.description = description
-        self.project = project
-        self.date = date
-        self.user = user
-        self.save()
-
     def json(self):
         return {
             "description": self.description,
             "date": self.date,
             "project": self.project.json(),
             "user": self.user.json(),
+            "id": self.id
         }
 
 
@@ -169,19 +116,13 @@ class Event(models.Model):
     date = models.IntegerField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    def create(self, name, project, date, user):
-        self.name = name
-        self.project = project
-        self.date = date
-        self.user = user
-        self.save()
-
     def json(self):
         return {
             "name": self.name,
             "date": self.date,
             "project": self.project.json(),
             "user": self.user.json(),
+            "id": self.id
         }
 
 
@@ -190,17 +131,11 @@ class Column(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     name = models.TextField()
 
-    def create(self, name, project, order):
-        self.name = name
-        self.project = project
-        self.order = order
-        self.save()
-
     def json(self):
         return {
             "name": self.name,
             "order": self.order,
-            "project": self.project.json()
+            "project": self.project.id
         }
 
 
@@ -212,18 +147,9 @@ class Card(models.Model):
     date_start = models.IntegerField(default=0)
     date_finish = models.IntegerField(default=0)
 
-    def create(self, column, name, description, order, date_start, date_finish):
-        self.column = column
-        self.name = name
-        self.description = description
-        self.order = order
-        self.date_start = date_start
-        self.date_finish = date_finish
-        self.save()
-
     def json(self):
         return {
-            "column": self.column.json(),
+            "column": self.column.id,
             "name": self.name,
             "description": self.description,
             "order": self.order,
@@ -242,18 +168,6 @@ class Activity(models.Model):
     date = models.IntegerField(default=0)
     type = models.TextField(default="")
     link = models.TextField(default="")
-
-    def create(self, user, project, name, description, file, date, id, type, link):
-        self.id = id
-        self.user = user
-        self.project = project
-        self.name = name
-        self.description = description
-        self.file = file
-        self.date = date
-        self.type = type
-        self.link = link
-        self.save()
 
     def json(self):
         return {"id": self.id,
@@ -275,14 +189,6 @@ class ActivityComment(models.Model):
     date = models.IntegerField()
     user = models.TextField()
 
-    def create(self, id, description, activity, date, user):
-        self.id = id
-        self.description = description
-        self.activity = activity
-        self.date = date
-        self.user = user
-        self.save()
-
     def json(self):
         return {
             "id": self.id,
@@ -300,15 +206,6 @@ class Stage(models.Model):
     project = models.TextField()
     date = models.IntegerField()
     period = models.TextField()
-
-    def create(self, id, name, description, project, date, period):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.project = project
-        self.date = date
-        self.period = period
-        self.save()
 
     def json(self):
         return {
@@ -329,16 +226,6 @@ class Money(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.IntegerField()
     sum = models.IntegerField()
-
-    def create(self, id, name, description, stage, user, date, sum):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.stage = stage
-        self.user = user
-        self.date = date
-        self.sum = sum
-        self.save()
 
     def json(self):
         return {
