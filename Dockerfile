@@ -11,8 +11,6 @@ RUN apk update \
 RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
-# copy project
 COPY . .
-RUN python manage.py makemigrations
-RUN python manage.py migrate
-RUN python manage.py collectstatic --noinput
+RUN chmod +x /usr/src/app/entrypoint.sh
+ENTRYPOINT ["sh", "/usr/src/app/entrypoint.sh" ]

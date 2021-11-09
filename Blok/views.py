@@ -26,8 +26,12 @@ def projects(request):
         filt = request.GET.get('creator')
         filtered_project = [obj.json() for obj in list(Project.objects.filter(creator=filt).all())]
     elif request.GET.get('name'):
-        filt = request.GET.get('name')
-        filtered_project = [obj.json() for obj in list(Project.objects.filter(name=filt).all())]
+        filtered_project = []
+        filt = request.GET.get('name').lower()
+        project_list = [obj.json() for obj in list(Project.objects.all())]
+        for obj in project_list:
+            if filt in obj['name'].lower():
+                filtered_project.append(obj)
     elif request.GET.get('category'):
         filt = request.GET.get('category')
         filtered_project = [obj.json() for obj in list(Project.objects.filter(category=filt).all())]
@@ -58,7 +62,7 @@ def tags(request):
 
 def comments(request):
     def sorted_by_date(comment):
-        return comment['date'];
+        return comment['date']
     count_on_page = int(request.GET.get('count'))
     page_number = int(request.GET.get('number'))
     comments_list = [obj.json() for obj in list(Comment.objects.all())]
@@ -68,13 +72,17 @@ def comments(request):
 
 def activities(request):
     def sorted_by_date(comment):
-        return comment['date'];
+        return comment['date']
     count_on_page = int(request.GET.get('count',default="100"))
     page_number = int(request.GET.get('number',default="1"))
-    activities_list = [obj.json() for obj in list(Activity.objects.all())]
-    activities_list = activities_list[(page_number-1)*count_on_page:page_number*count_on_page]
-    activities_list = sorted(activities_list, key=sorted_by_date, reverse=True)
-    return JsonResponse({"result": activities_list})
+    if request.GET.get('type'):
+        filt = request.GET.get('type')
+        filtered_activities = [obj.json() for obj in list(Activity.objects.filter(type=filt).all())]
+    else:
+        filtered_activities = [obj.json() for obj in list(Activity.objects.all())]
+    filtered_activities = filtered_activities[(page_number-1)*count_on_page:page_number*count_on_page]
+    filtered_activities = sorted(filtered_activities, key=sorted_by_date, reverse=True)
+    return JsonResponse({"result": filtered_activities})
 
 def events(request):
     comments_list = [obj.json() for obj in list(Event.objects.all())]
@@ -273,8 +281,9 @@ def get_project_status(request,id):
     if status:
         return JsonResponse(status)
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({"statuses":[]})
 
+@csrf_exempt
 def get_user_status(request,id):
     user_id = id
     count_on_page = int(request.GET.get('count', default=100))
@@ -285,7 +294,7 @@ def get_user_status(request,id):
     if status:
         return JsonResponse({"statuses": filtered_project})
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({"statuses": []})
 
 @csrf_exempt
 def update_status(request):
@@ -310,15 +319,37 @@ def write_tag(request):
     if request.method == "POST":
         request = json.loads(request.body)
         name = request['name']
-        if Tag.objects.filter(name=name).first():
+        tag = Tag.objects.filter(name=name).first()
+        if tag:
+            project_id = request['project']
+            project = Project.objects.filter(id=project_id).first()
+            project.tags.add(tag)
+            project.save()
             return HttpResponse(status=405)
         else:
-            project = request['project']
+            project_id = request['project']
             r = Tag(name=str(name))
             r.save()
-            r.project.add(Project.objects.filter(id=project).first())
-            r.save()
+            project = Project.objects.filter(id=project_id).first()
+            project.tags.add(r)
+            project.save()
             return JsonResponse(r.json())
+    else:
+        return HttpResponse(status=405)
+
+
+@csrf_exempt
+def write_recrut(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        name = request['name']
+        project_id = request['project']
+        r = Recrut(name=str(name))
+        r.save()
+        project = Project.objects.filter(id=project_id).first()
+        project.recruts.add(r)
+        project.save()
+        return JsonResponse(r.json())
     else:
         return HttpResponse(status=405)
 
@@ -349,7 +380,7 @@ def get_project_comment(request,id):
     if comment:
         return JsonResponse(comment)
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({"comments":[]})
 
 @csrf_exempt
 def update_comment(request):
@@ -398,7 +429,7 @@ def get_project_event(request,id):
     if event:
         return JsonResponse(event)
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({"events":[]})
 
 @csrf_exempt
 def get_user_event(request,id):
@@ -408,7 +439,7 @@ def get_user_event(request,id):
     if event:
         return JsonResponse(event)
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({"events":[]})
 
 @csrf_exempt
 def update_event(request):
@@ -457,12 +488,20 @@ def writecard(request):
         description = request['description']
         column_order = request['column_order']
         order = request['order']
+        date_start = request['date_start']
+        date_finish = request['date_finish']
+        if request['date_start']:
+            date_start = request['date_start']
+        if request['date_finish']:
+            date_finish = request['date_finish']
         column = Column.objects.filter(project=project, order=column_order).first()
         card = Card(name=name,
-                 description=description,
-                 column=column,
-                 order = order,
-                 )
+                    description=description,
+                    column=column,
+                    order = order,
+                    date_start = date_start,
+                    date_finish = date_finish
+                    )
         card.save()
         return JsonResponse({"Response": card.json()})
     else:
@@ -483,7 +522,7 @@ def getboard(request,id):
         if columns:
             return JsonResponse({"columns": columns})
         else:
-            return HttpResponse(status=404)
+            return JsonResponse({"columns": []})
 
 @csrf_exempt
 def switch(request):
@@ -496,11 +535,7 @@ def switch(request):
         project_id = request['project_id']
         project = Project.objects.filter(id=project_id).first()
         column_start = Column.objects.filter(project=project, order= column_prev).first()
-        card_start = Card.objects.filter(column=column_start, order= card_prev).first()
-        card_start.order = card_next
-        column_finish = Column.objects.filter(project=project, order= column_next).first()
-        card_start.column = column_finish
-        card_start.save()
+        column_finish = Column.objects.filter(project=project, order=column_next).first()
         for some_card in Card.objects.filter(column=column_start).all():
             if some_card.order > card_prev:
                 some_card.order -= 1
@@ -509,6 +544,11 @@ def switch(request):
             if some_card.order >= card_next:
                 some_card.order += 1
                 some_card.save()
+        card_start = Card.objects.filter(column=column_start, order= card_prev).first()
+        card_start.order = card_next
+        card_start.column = column_finish
+        card_start.save()
+
         return JsonResponse({"Response": True})
     else:
         return HttpResponse(status=405)
@@ -524,12 +564,38 @@ def write_active(request):
         user = request['user']
         date = time.time()
         type = request['type']
+        link = ""
+        if request['link']:
+            link = request['link']
         r = Activity(name=str(name),
                     description = str(description),
                     project=Project.objects.filter(id=project).first(),
                     user=User.objects.filter(id=user).first(),
                     date = date,
-                    type = type
+                    type = type,
+                    link = link
+                    )
+        r.save()
+        return JsonResponse(r.json())
+    else:
+        return HttpResponse(status=405)
+
+@csrf_exempt
+def write_money(request):
+    if request.method == "POST":
+        request = json.loads(request.body)
+        name = request['name']
+        description = request['description']
+        stage = request['stage']
+        user = request['user']
+        date = time.time()
+        sum = int(request['sum'])
+        r = Money(name=str(name),
+                    description = str(description),
+                    stage=Stage.objects.filter(id=stage).first(),
+                    user=User.objects.filter(id=user).first(),
+                    date = date,
+                    sum = sum
                     )
         r.save()
         return JsonResponse(r.json())
@@ -537,6 +603,18 @@ def write_active(request):
         return HttpResponse(status=405)
 
 
+@csrf_exempt
+def get_stage_money(request,id):
+    def sorted_by_date(money):
+        return money['date']
+    stage_id = id
+    stage = Stage.objects.filter(id=stage_id).first()
+    money = [obj.json() for obj in list(Money.objects.filter(stage=stage).all())]
+    money_list = sorted(money, key=sorted_by_date, reverse = True)
+    if money_list:
+        return JsonResponse({'money': money_list})
+    else:
+        return JsonResponse({'money': []})
 
 
 @csrf_exempt
@@ -545,7 +623,11 @@ def get_project_active(request,id):
         return active['date']
     project_id = id
     project = Project.objects.filter(id=project_id).first()
-    active = [obj.json() for obj in list(Activity.objects.filter(project=project).all())]
+    if request.GET.get('type'):
+        filt = request.GET.get('type')
+        active = [obj.json() for obj in list(Activity.objects.filter(project=project, type=filt).all())]
+    else:
+        active = [obj.json() for obj in list(Activity.objects.filter(project=project).all())]
     activities_list = sorted(active, key=sorted_by_date, reverse = True)
     if active:
         return JsonResponse({'activities': activities_list})
@@ -563,7 +645,7 @@ def get_user_active(request,id):
     if active:
         return JsonResponse({'activities': activities_list})
     else:
-        return HttpResponse(status=404)
+        return JsonResponse({'activities': []})
 
 @csrf_exempt
 def update_active_file(request,id):
@@ -578,7 +660,7 @@ def update_active_file(request,id):
         Activity.objects.filter(id=activity_id).update(**dictionary)
         return JsonResponse(dictionary)
     else:
-        return HttpResponse(status=404)
+        return HttpResponse(status=400)
 
 
 @csrf_exempt
@@ -589,11 +671,12 @@ def write_active_comment(request):
         activity = request['activity']
         user = request['user']
         date = time.time()
-        r = ActivityComment(description=str(description),
-                    activity=activity,
-                    user=user,
-                    date = date
-                    )
+        r = ActivityComment(
+            description=str(description),
+            activity=activity,
+            user=user,
+            date = date
+            )
         r.save()
         return JsonResponse(r.json())
     else:

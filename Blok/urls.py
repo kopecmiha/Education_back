@@ -37,6 +37,8 @@ urlpatterns = [
 
     path('write_tag/', views.write_tag),path('write_status/', views.write_status),
 
+    path('write_recrut/', views.write_recrut),
+
     path('write_comment/', views.write_comment),
     path('get_project_comment/<int:id>/', views.get_project_comment),
     path('update_comment/', views.update_comment),
@@ -52,6 +54,10 @@ urlpatterns = [
     path('get_project_active/<int:id>/', views.get_project_active),
     path('get_user_active/<int:id>/', views.get_user_active),
     path('update_active_file/<int:id>/', views.update_active_file),
+
+    path('write_money/', views.write_money),
+    path('get_stage_money/<int:id>/', views.get_stage_money),
+
 
     path('board/writecolumn/', views.writecolumn),
     path('board/writecard/', views.writecard),
