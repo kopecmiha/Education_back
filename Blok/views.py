@@ -186,19 +186,17 @@ def update_user_avatar2(request, id):
 def write_project(request):
     if request.method == "POST":
         request = json.loads(request.body)
-        creator = User.objects.get(id=request["creator"])
-        print(creator)
+        tags = request.get('tags')
+        creator = User.objects.get(id=request["creator"][0])
+        del request['tags']
         del request["creator"]
         project = Project.objects.create(**request)
         project.creator = creator
         project.save()
-        if tags := request.get('tags'):
-            for tag in tags:
-                if len(Tag.objects.filter(name=tag).all()) == 0:
-                    some_tag = Tag(name=tag)
-                    some_tag.save()
-            for tag in tags:
-                project.tags.add(Tag.objects.filter(name=tag).first())
+        for tag in tags:
+            Tag.objects.get_or_create(name=tag)
+        tags = Tag.objects.filter(name__in=tags)
+        project.tags.add(*tags)
         return JsonResponse(project.json())
     else:
         return HttpResponse(status=405)
