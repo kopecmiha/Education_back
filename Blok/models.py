@@ -136,6 +136,7 @@ class Column(models.Model):
             "name": self.name,
             "order": self.order,
             "project": self.project.json(),
+            "id": self.id
         }
 
 
@@ -164,7 +165,7 @@ class Activity(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     name = models.TextField()
     description = models.TextField()
-    file = models.TextField()
+    file = models.FileField(upload_to="activities", null=True)
     date = models.IntegerField(default=0)
     type = models.TextField(default="")
     link = models.TextField(default="")
@@ -175,7 +176,7 @@ class Activity(models.Model):
                 "project": self.project.json(),
                 "name": self.name,
                 "description": self.description,
-                "file": self.file,
+                "file": self.file.name,
                 "date": self.date,
                 "type": self.type,
                 "link": self.link

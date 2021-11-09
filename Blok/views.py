@@ -177,7 +177,7 @@ def update_user_avatar2(request, id):
         the_file = request.FILES['image']
         dictionary = {'avatar_image': the_file}
         User.objects.filter(id=user_id).update(**dictionary)
-        return JsonResponse({'img_name': User.objects.filter(id=user_id).first().avatar_image})
+        return JsonResponse({'img_name': User.objects.filter(id=user_id).first().avatar_image.name})
     else:
         return HttpResponse(status=404)
 
@@ -229,7 +229,7 @@ def update_project_image(request, id):
         the_file = request.FILES['image']
         dictionary = {'image': the_file}
         Project.objects.filter(id=id).update(**dictionary)
-        return JsonResponse({'img_name': Project.objects.filter(id=id).first().image})
+        return JsonResponse({'img_name': Project.objects.filter(id=id).first().image.name})
     else:
         return HttpResponse(status=404)
 
@@ -473,14 +473,12 @@ def writecard(request):
 
 @csrf_exempt
 def getboard(request, id):
-    final_columns = []
     project_id = id
     project = Project.objects.filter(id=project_id).first()
     columns = [obj.json() for obj in list(Column.objects.filter(project=project).all())]
     for col in columns:
-        columna = Column.objects.filter(project=col['project'], name=col['name']).first()
         col = col.update({
-            'cards': [obj.json() for obj in list(Card.objects.filter(column=columna).all())]
+            'cards': [obj.json() for obj in list(Card.objects.filter(column=col["id"]).all())]
         })
     if columns:
         return JsonResponse({"columns": columns})
@@ -622,12 +620,8 @@ def get_user_active(request, id):
 def update_active_file(request, id):
     activity_id = id
     if request.FILES:
-        the_file = request.FILES['image']
-        upload_to = 'files/'
-        timing = "act" + str(int(time.time()))
-        path = default_storage.save(os.path.join(upload_to, timing + the_file.name), the_file)
-        link = default_storage.url(timing + the_file.name).replace('/posts/media/', "")
-        dictionary = {'file': link}
+        the_file = request.FILES['file']
+        dictionary = {'file': the_file}
         Activity.objects.filter(id=activity_id).update(**dictionary)
         return JsonResponse(dictionary)
     else:
