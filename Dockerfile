@@ -13,4 +13,5 @@ COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
 RUN chmod +x /usr/src/app/entrypoint.sh
-ENTRYPOINT ["sh", "/usr/src/app/entrypoint.sh" ]
+RUN python manage.py migrate
+RUN python manage.py collectstatic --noinput
