@@ -63,6 +63,7 @@ urlpatterns = [
     path('board/writecard/', views.writecard),
     path('board/getboard/<int:id>/', views.getboard),
     path('board/switch/', views.switch),
+    path('board/switch_columns/', views.switch_columns),
 
     path('write_active_comment/', views.write_active_comment),
     path('get_active_comment/<int:id>/', views.get_active_comment),

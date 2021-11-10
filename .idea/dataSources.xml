@@ -7,5 +7,11 @@
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:C:\Users\kopts\PycharmProjects\Education_back\db.sqlite3</jdbc-url>
     </data-source>
+    <data-source source="LOCAL" name="work_with_me_backend@172.19.0.2" uuid="2fe70f94-156f-4704-9d58-e298636cb234">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://172.19.0.2:5432/work_with_me_backend</jdbc-url>
+    </data-source>
   </component>
 </project>
