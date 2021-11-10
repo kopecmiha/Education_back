@@ -568,6 +568,7 @@ def switch(request):
         project = Project.objects.filter(id=project_id).first()
         column_start = Column.objects.filter(project=project, order=column_prev).first()
         column_finish = Column.objects.filter(project=project, order=column_next).first()
+        card_start = Card.objects.filter(column=column_start, order=card_prev).first()
         for some_card in Card.objects.filter(column=column_start).all():
             if some_card.order > card_prev:
                 some_card.order -= 1
@@ -576,7 +577,6 @@ def switch(request):
             if some_card.order >= card_next:
                 some_card.order += 1
                 some_card.save()
-        card_start = Card.objects.filter(column=column_start, order=card_prev).first()
         card_start.order = card_next
         card_start.column = column_finish
         card_start.save()
